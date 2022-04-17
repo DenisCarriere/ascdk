@@ -101,6 +101,35 @@ export function nameToSuffix(name: Name): Name {
     return new Name(nameValue)
 }
 
+export function nameToPrefix(name: Name): Name {
+    let result: u64 = name.N;
+    let not_dot_character_seen: bool = false;
+    let mask: u64 = 0xF;
+
+    // Get characters one-by-one in name in order from right to left
+    for ( let offset: i32 = 0; offset <= 59; ) {
+      let c: u64 = (name.N >> offset) & mask;
+
+      if( !c ) { // if this character is a dot
+          if (not_dot_character_seen) { // we found the rightmost dot character
+            result = (name.N >> offset) << offset;
+            break;
+          }
+      } else {
+          not_dot_character_seen = true;
+      }
+
+      if (offset == 0) {
+          offset += 4;
+          mask = 0x1F;
+      } else {
+          offset += 5;
+      }
+    }
+
+    return new Name(result);
+}
+
 export class Name implements Packer {
     N: u64;
 
@@ -122,6 +151,10 @@ export class Name implements Packer {
 
     suffix(): Name {
         return nameToSuffix(this)
+    }
+
+    prefix(): Name {
+      return nameToPrefix(this)
     }
 
     pack(): u8[] {
@@ -154,17 +187,17 @@ export class Name implements Packer {
     static lt(a: Name, b: Name): bool {
         return a.N < b.N;
     }
-  
+
     @inline @operator('>')
     static gt(a: Name, b: Name): bool {
         return a.N > b.N;
     }
-  
+
     @inline @operator('<=')
     static lte(a: Name, b: Name): bool {
         return a.N <= b.N;
     }
-  
+
     @inline @operator('>=')
     static gte(a: Name, b: Name): bool {
         return a.N >= b.N;
